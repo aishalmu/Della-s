@@ -1,0 +1,23 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# Creates the website plus a small disk so bookings survive restarts.
+services:
+  - type: web
+    name: dellas-nails
+    runtime: node
+    plan: starter # disks need a paid instance; free instances lose data on restart
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/services
+    envVars:
+      - key: ADMIN_PASSWORD
+        sync: false # Render asks for this when the Blueprint is created
+      - key: NODE_VERSION
+        value: "22"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: DATABASE_FILE
+        value: /var/data/bookings.db
+    disk:
+      name: bookings
+      mountPath: /var/data
+      sizeGB: 1

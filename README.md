@@ -45,7 +45,10 @@ or change the title and text for Christmas, Valentine's and so on. Restart the s
 
 ## Putting it online
 
-It needs a host that runs Node.js and keeps a file between restarts (for the database), for example
+**Easiest: Render.** The included [`render.yaml`](render.yaml) sets everything up. In Render choose
+*New → Blueprint*, pick this repo and branch, and enter an admin password when asked.
+
+**Other hosts.** It needs a host that runs Node.js and keeps a file between restarts (for the database), for example
 [Render](https://render.com) (with a persistent disk), [Railway](https://railway.app) (with a volume) or
 [Fly.io](https://fly.io) (with a volume). In each case:
 
