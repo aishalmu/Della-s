@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Della's · Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Great+Vibes&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <header class="admin-head">
+    <span class="brand small">Della's</span>
+    <nav class="tabs" id="tabs" hidden>
+      <button type="button" data-tab="bookings" class="active">Bookings</button>
+      <button type="button" data-tab="services">Prices</button>
+      <button type="button" data-tab="hours">Hours</button>
+      <button type="button" data-tab="timeoff">Time off</button>
+    </nav>
+    <button type="button" class="link" id="logout" hidden>Log out</button>
+  </header>
+
+  <main>
+    <form id="login" class="card narrow" hidden>
+      <h1 class="section-title">Welcome back</h1>
+      <label class="field"><span>Password</span>
+        <input type="password" name="password" autocomplete="current-password" required></label>
+      <p class="error" id="login-error" hidden></p>
+      <button class="btn" type="submit">Log in</button>
+      <a class="link" href="/">‹ Back to the website</a>
+    </form>
+
+    <section data-view="bookings" class="card" hidden>
+      <div class="row-between">
+        <h2 class="section-title left">Upcoming bookings</h2>
+        <label class="check"><input type="checkbox" id="show-cancelled"> Show cancelled</label>
+      </div>
+      <div id="bookings"></div>
+    </section>
+
+    <section data-view="services" class="card" hidden>
+      <h2 class="section-title left">Price list</h2>
+      <p class="hint">Change prices and times, then press Save on that row. "Online booking" off means it shows on the price list as an extra but can't be booked by itself. "Show" off hides it from the website.</p>
+      <div id="services"></div>
+      <button type="button" class="btn outline" id="add-service">+ Add a treatment</button>
+    </section>
+
+    <section data-view="hours" class="card" hidden>
+      <h2 class="section-title left">Working days</h2>
+      <p class="hint">Customers can book any time that fits inside these hours. The last appointment is timed to finish by closing.</p>
+      <form id="hours-form">
+        <div id="hours-rows"></div>
+        <p class="error" id="hours-error" hidden></p>
+        <p class="ok" id="hours-ok" hidden>Saved ✓</p>
+        <button class="btn" type="submit">Save hours</button>
+      </form>
+    </section>
+
+    <section data-view="timeoff" class="card" hidden>
+      <h2 class="section-title left">Time off</h2>
+      <p class="hint">Block out holidays, appointments or personal time. Existing bookings aren't cancelled, so check the Bookings tab.</p>
+      <form id="block-form" class="block-form">
+        <label class="field"><span>From</span><input type="date" name="date" required></label>
+        <label class="field"><span>Until <em>(optional)</em></span><input type="date" name="endDate"></label>
+        <label class="field"><span>Start time <em>(blank = all day)</em></span><input type="time" name="start"></label>
+        <label class="field"><span>End time</span><input type="time" name="end"></label>
+        <label class="field wide"><span>Note <em>(only you see this)</em></span><input name="reason" maxlength="100"></label>
+        <p class="error wide" id="block-error" hidden></p>
+        <button class="btn wide" type="submit">Block this time</button>
+      </form>
+      <ul id="blocks" class="block-list"></ul>
+    </section>
+  </main>
+
+  <script src="admin.js"></script>
+</body>
+</html>
