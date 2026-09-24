@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Book · Della's BIAB Nails</title>
+  <meta name="description" content="Book your nail appointment online with Della's.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Great+Vibes&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="book">
+  <div id="announcement" class="announcement" hidden>
+    <p class="script" id="announcement-title"></p>
+    <p id="announcement-text"></p>
+  </div>
+
+  <header class="site-header">
+    <a class="brand-link" href="/">
+      <span class="brand" data-info="businessName">Della's</span>
+      <span class="brand-sub" data-info="businessSubtitle">BIAB Nails</span>
+    </a>
+  </header>
+
+  <nav class="nav" aria-label="Main">
+    <a href="/">Home</a>
+    <a href="/prices">Prices</a>
+    <a href="/book" aria-current="page">Book</a>
+    <a href="/contact">Contact</a>
+  </nav>
+
+  <main>
+    <section id="book" class="card">
+      <h1 class="section-title">Let's get you booked!</h1>
+      <div class="divider small"><span>♥</span></div>
+
+      <ol class="steps" aria-label="Booking steps">
+        <li data-step="1" class="active">Treatments</li>
+        <li data-step="2">Date</li>
+        <li data-step="3">Time</li>
+        <li data-step="4">Your details</li>
+      </ol>
+
+      <div class="step" data-panel="1">
+        <p class="hint center">Tick everything you'd like done. Extras like nail art go with a main treatment.</p>
+        <div id="picker" class="picker"><p class="muted">Loading treatments…</p></div>
+        <div class="basket-bar">
+          <p id="basket-summary" class="basket-summary">Nothing chosen yet</p>
+          <p class="error" id="picker-error" role="alert" hidden></p>
+          <button class="btn" id="to-date" type="button">Choose a date</button>
+        </div>
+      </div>
+
+      <div class="step" data-panel="2" hidden>
+        <p class="summary" id="summary-2"></p>
+        <div class="calendar">
+          <div class="cal-head">
+            <button type="button" class="cal-nav" id="cal-prev" aria-label="Previous month">‹</button>
+            <span id="cal-title"></span>
+            <button type="button" class="cal-nav" id="cal-next" aria-label="Next month">›</button>
+          </div>
+          <div class="cal-grid cal-days">
+            <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+          </div>
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+        <p class="error" id="cal-error" role="alert" hidden></p>
+        <button class="link" type="button" data-back="1">‹ Change treatments</button>
+      </div>
+
+      <div class="step" data-panel="3" hidden>
+        <p class="summary" id="summary-3"></p>
+        <div id="slots" class="slots"></div>
+        <button class="link" type="button" data-back="2">‹ Change date</button>
+      </div>
+
+      <form class="step" data-panel="4" id="details-form" hidden>
+        <p class="summary" id="summary-4"></p>
+        <label class="field"><span>Your name</span>
+          <input id="name" name="name" autocomplete="name" required maxlength="100"></label>
+        <label class="field"><span>Mobile number</span>
+          <input id="phone" name="phone" type="tel" autocomplete="tel" required maxlength="30"></label>
+        <label class="field"><span>Email <em>(optional)</em></span>
+          <input id="email" name="email" type="email" autocomplete="email" maxlength="150"></label>
+        <label class="field"><span>Notes <em>(nail art ideas, colours, anything I should know)</em></span>
+          <textarea id="notes" name="notes" rows="3" maxlength="500"></textarea></label>
+        <p class="error" id="form-error" role="alert" hidden></p>
+        <button class="btn" type="submit" id="confirm-btn">Confirm booking</button>
+        <button class="link" type="button" data-back="3">‹ Change time</button>
+      </form>
+
+      <div class="step confirmed" data-panel="done" hidden>
+        <p class="script big">You're booked!</p>
+        <p id="confirmation"></p>
+        <p class="hint">Need to change anything? Just message me on WhatsApp and quote your reference.</p>
+        <button class="btn outline" type="button" id="book-another">Book another appointment</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="divider small"><span>♥</span></div>
+    <p>&copy; <span id="year"></span> <span id="footer-name"></span></p>
+  </footer>
+
+  <script src="site.js"></script>
+  <script src="book.js"></script>
+</body>
+</html>

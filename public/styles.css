@@ -43,37 +43,45 @@ a { color: var(--brown); }
 .announcement p { margin: 0; }
 .announcement .script { font-size: 2rem; line-height: 1.2; }
 
-/* ---------- hero ---------- */
+/* ---------- header ---------- */
 
-.hero {
+.site-header {
   position: relative;
   text-align: center;
-  padding: 64px 16px 48px;
+  padding: 28px 16px 18px;
   overflow: hidden;
 }
+.site-header.hero { padding: 64px 16px 48px; }
+
+.brand-link { display: inline-block; text-decoration: none; }
 
 .brand {
-  margin: 0;
-  font: 500 clamp(3.2rem, 12vw, 5.5rem)/1 var(--serif);
+  display: block;
+  font: 500 clamp(2.2rem, 8vw, 3rem)/1 var(--serif);
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--brown);
   padding-left: 0.22em; /* balance trailing letter-spacing */
 }
+.hero .brand { font-size: clamp(3.2rem, 12vw, 5.5rem); }
 
 .brand-sub {
-  margin: 10px 0 0;
-  font: 500 1.1rem var(--serif);
+  display: block;
+  margin-top: 8px;
+  font: 500 0.95rem var(--serif);
   letter-spacing: 0.35em;
   text-transform: uppercase;
   color: var(--brown);
 }
+.hero .brand-sub { font-size: 1.1rem; margin-top: 10px; }
 
 .tagline {
   max-width: 34ch;
   margin: 0 auto 28px;
   font-size: 1.1rem;
 }
+
+.cta-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
 
 .sparkle { position: absolute; color: var(--accent); opacity: 0.7; }
 .s1 { top: 30px; left: 12%; font-size: 1.1rem; }
@@ -119,6 +127,7 @@ a { color: var(--brown); }
   color: var(--brown-dark);
 }
 .nav a:hover { color: var(--accent); }
+.nav a[aria-current="page"] { color: var(--accent); border-bottom: 1px solid currentColor; }
 
 /* ---------- layout ---------- */
 
@@ -147,6 +156,27 @@ main {
 
 .about { text-align: center; max-width: 52ch; margin: 0 auto 28px; }
 .muted { color: var(--muted); text-align: center; }
+
+/* ---------- home ---------- */
+
+.quick-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.quick-link {
+  display: grid;
+  gap: 2px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-align: center;
+  transition: border-color 0.15s;
+}
+.quick-link .script { font-size: 2.2rem; line-height: 1.1; color: var(--brown-dark); }
+.quick-link:hover { border-color: var(--brown); }
+
+.card-foot { display: grid; gap: 12px; justify-items: center; margin-top: 28px; text-align: center; }
 
 /* ---------- price list ---------- */
 
@@ -178,6 +208,7 @@ main {
 .price-amount { font-weight: 500; white-space: nowrap; }
 .price-amount small { font-weight: 300; }
 .price-book {
+  text-decoration: none;
   grid-column: 2;
   justify-self: end;
   font-size: 0.8rem;
@@ -253,6 +284,38 @@ input:focus, select:focus, textarea:focus, button:focus-visible {
 }
 
 .hint { margin: 0; font-size: 0.85rem; color: var(--muted); }
+.hint.center { text-align: center; }
+
+/* treatment picker */
+
+.picker { display: grid; gap: 22px; }
+.pick-group { border: 0; margin: 0; padding: 0; min-width: 0; }
+.pick-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 4px 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--line);
+}
+.pick-row:last-child { border-bottom: 0; }
+.pick-row input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--brown); margin: 0; }
+.pick-row label { display: grid; cursor: pointer; }
+.pick-row .qty { grid-column: 2 / -1; width: auto; justify-self: start; padding: 6px 10px; font-size: 15px; }
+
+.basket-bar {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  margin: 0 -8px;
+  padding: 14px 8px calc(14px + env(safe-area-inset-bottom, 0px));
+  background: var(--card);
+  border-top: 1px solid var(--line);
+}
+.basket-summary { margin: 0; font-weight: 400; color: var(--brown-dark); text-align: center; }
+
 .summary {
   margin: 0;
   text-align: center;

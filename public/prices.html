@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prices · Della's BIAB Nails</title>
+  <meta name="description" content="Price list for BIAB, acrylic, toes and extras at Della's.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Great+Vibes&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="prices">
+  <div id="announcement" class="announcement" hidden>
+    <p class="script" id="announcement-title"></p>
+    <p id="announcement-text"></p>
+  </div>
+
+  <header class="site-header">
+    <a class="brand-link" href="/">
+      <span class="brand" data-info="businessName">Della's</span>
+      <span class="brand-sub" data-info="businessSubtitle">BIAB Nails</span>
+    </a>
+  </header>
+
+  <nav class="nav" aria-label="Main">
+    <a href="/">Home</a>
+    <a href="/prices" aria-current="page">Prices</a>
+    <a href="/book">Book</a>
+    <a href="/contact">Contact</a>
+  </nav>
+
+  <main>
+    <section class="card">
+      <h1 class="section-title">Price List</h1>
+      <div id="price-list" class="price-list"><p class="muted">Loading prices…</p></div>
+      <div class="card-foot">
+        <p class="hint">You can book more than one treatment in the same appointment.</p>
+        <a class="btn" href="/book">Book now</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="divider small"><span>♥</span></div>
+    <p>&copy; <span id="year"></span> <span id="footer-name"></span></p>
+  </footer>
+
+  <script src="site.js"></script>
+</body>
+</html>

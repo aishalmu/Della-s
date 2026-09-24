@@ -97,6 +97,19 @@ main { max-width: 900px; }
 .block-list { list-style: none; padding: 0; margin: 0; }
 .block-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px dashed var(--line); }
 
+/* calendar */
+.cal-part { display: grid; gap: 10px; padding: 18px 0; border-top: 1px dashed var(--line); }
+.cal-part h3 { margin: 0; font: 600 1.3rem var(--serif); color: var(--brown-dark); }
+.cal-part p { margin: 0; }
+.feed-box { display: flex; gap: 8px; align-items: center; }
+.feed-box input { flex: 1; min-width: 0; font-size: 14px; padding: 10px 12px; }
+.cal-part details { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; background: #fff; }
+.cal-part summary { cursor: pointer; font-weight: 400; color: var(--brown-dark); }
+.cal-part ol { margin: 10px 0 4px; padding-left: 20px; display: grid; gap: 6px; font-size: 0.95rem; }
+.inline-link { background: none; border: 0; padding: 0; font: inherit; color: var(--brown); text-decoration: underline; cursor: pointer; }
+.status-ok { color: var(--ok); }
+.status-bad { color: var(--error); }
+
 @media (max-width: 640px) {
   .service-row { grid-template-columns: 1fr 1fr; }
   .service-row .desc, .service-row .flags, .service-row .actions { grid-column: 1 / -1; }

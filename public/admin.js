@@ -68,7 +68,7 @@
   function showTab(name) {
     document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
     document.querySelectorAll('[data-view]').forEach((v) => { v.hidden = v.dataset.view !== name; });
-    ({ bookings: loadBookings, services: loadServices, hours: loadHours, timeoff: loadBlocks })[name]();
+    ({ bookings: loadBookings, services: loadServices, hours: loadHours, timeoff: loadBlocks, calendar: loadCalendar })[name]();
   }
   document.querySelectorAll('#tabs button').forEach((b) => { b.onclick = () => showTab(b.dataset.tab); });
 
@@ -280,6 +280,68 @@
       loadBlocks();
     } catch (err) {
       showError($('#block-error'), err.message);
+    }
+  };
+
+  // ---------- calendar ----------
+
+  function showFeed(feedPath) {
+    const url = location.origin + feedPath;
+    $('#feed-url').value = url;
+    $('#webcal-link').href = url.replace(/^https?:/, 'webcal:');
+  }
+
+  function showBusyStatus(status) {
+    const node = $('#busy-status');
+    if (!status.connected) {
+      node.className = 'hint';
+      node.textContent = 'Not linked yet.';
+    } else if (status.error) {
+      node.className = 'hint status-bad';
+      node.textContent = `Couldn't read your calendar: ${status.error}. Check the link is copied in full.`;
+    } else {
+      node.className = 'hint status-ok';
+      node.textContent = `Linked ✓ Checked ${new Date(status.lastSuccess).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}. It's checked again every few minutes.`;
+    }
+  }
+
+  async function loadCalendar() {
+    const cal = await api('/api/admin/calendar');
+    showFeed(cal.feedPath);
+    $('#busy-url').value = cal.busyUrl;
+    showBusyStatus(cal.status);
+  }
+
+  $('#copy-feed').onclick = async () => {
+    try {
+      await navigator.clipboard.writeText($('#feed-url').value);
+    } catch {
+      $('#feed-url').select();
+      document.execCommand('copy');
+    }
+    $('#copy-msg').hidden = false;
+    setTimeout(() => { $('#copy-msg').hidden = true; }, 2000);
+  };
+
+  $('#reset-feed').onclick = async () => {
+    if (!confirm('Make a new link? The old one will stop working and you will need to subscribe again.')) return;
+    const { feedPath } = await post('/api/admin/calendar/reset-feed');
+    showFeed(feedPath);
+  };
+
+  $('#busy-form').onsubmit = async (e) => {
+    e.preventDefault();
+    $('#busy-status').className = 'hint';
+    $('#busy-status').textContent = 'Checking your calendar…';
+    try {
+      const { status } = await api('/api/admin/calendar', {
+        method: 'PUT',
+        body: JSON.stringify({ busyUrl: $('#busy-url').value.trim() }),
+      });
+      showBusyStatus(status);
+    } catch (err) {
+      $('#busy-status').className = 'hint status-bad';
+      $('#busy-status').textContent = err.message;
     }
   };
 

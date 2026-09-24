@@ -1,15 +1,31 @@
 # Della's BIAB Nails: website & online booking
 
-A small website for Della's nail business:
+A small website for Della's nail business, with separate pages:
 
-- **Price list**: grouped like the flyer (BIAB, Acrylic, Toes, Extras), including "£4 extra" / "£2 per nail" add-ons
-- **Working days**: opening hours for each day
-- **Online booking**: customers pick a treatment, then a date, a free time and their details. Times already booked, days off and closed days are never offered, and two people can't book the same slot
+- **Home** (`/`): welcome, links and working days
+- **Prices** (`/prices`): grouped like the flyer (BIAB, Acrylic, Toes, Extras), including "£4 extra" / "£2 per nail" add-ons
+- **Book** (`/book`): customers tick one or more treatments (plus extras like nail art or repairs), then pick a date,
+  a free time and enter their details. The total price and time are added up, and only slots long enough are offered.
+  Times already booked, days off, closed days and anything in Della's own calendar are never offered, and two people
+  can't book the same slot
+- **Contact** (`/contact`): WhatsApp, Facebook, working days and policies
 - **Admin page** at `/admin.html` (password protected) where Della can:
   - see upcoming bookings (with tap-to-call / WhatsApp links) and cancel or restore them
   - change prices, treatment lengths and names, and add or remove treatments
   - change working days and hours
   - block out holidays or part-days
+  - link the site to her phone's calendar (see below)
+
+## Calendar link
+
+Admin → **Calendar** has step-by-step instructions for both directions:
+
+1. **Bookings → her calendar.** A private calendar link (`/calendar/<secret>.ics`) she subscribes to on her iPhone,
+   Google Calendar or Outlook. New bookings show up with the client's name, treatments, phone and notes.
+   iPhones refresh it as often as every 15 minutes; Google Calendar can take several hours.
+2. **Her calendar → the website.** She pastes her own calendar's private iCal link (iCloud "Public Calendar" link,
+   Google "Secret address in iCal format", or Outlook's published ICS link). The site checks it every few minutes
+   and won't offer times that clash with her events. Events marked "Free" are ignored.
 
 ## Running it
 

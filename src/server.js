@@ -3,35 +3,54 @@ const crypto = require('node:crypto');
 const express = require('express');
 const { openDatabase } = require('./db');
 const { weekday, addDays, nowInTimeZone, getSlots, toMinutes } = require('./availability');
+const { createBusyCalendar, bookingsToIcs } = require('./calendar');
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 const SESSION_HOURS = 12;
+const MAX_ITEMS = 8;
+const MAX_QTY = 10;
 
-function createApp({ db, config, adminPassword, clock = () => new Date() }) {
+function createApp({ db, config, adminPassword, clock = () => new Date(), busyCalendar }) {
   const app = express();
   app.use(express.json({ limit: '20kb' }));
-  app.use(express.static(path.join(__dirname, '..', 'public')));
+  // extensions: lets /prices serve prices.html
+  app.use(express.static(path.join(__dirname, '..', 'public'), { extensions: ['html'] }));
 
   const sessionSecret = crypto.randomBytes(32);
 
   // ---------- helpers ----------
 
-  const getHours = () =>
-    JSON.parse(db.prepare("SELECT value FROM settings WHERE key = 'hours'").get().value);
+  const getSetting = (key) => db.prepare('SELECT value FROM settings WHERE key = ?').get(key)?.value;
+  const setSetting = (key, value) =>
+    db.prepare(
+      'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+    ).run(key, value);
+
+  const getHours = () => JSON.parse(getSetting('hours'));
+
+  if (!getSetting('feed_token')) setSetting('feed_token', crypto.randomBytes(18).toString('base64url'));
 
   const now = () => nowInTimeZone(config.timezone, clock());
   const lastBookableDate = () => addDays(now().date, config.bookingWindowDays);
 
-  function slotsFor(date, duration, { excludeBookingId } = {}) {
+  const calendar =
+    busyCalendar ||
+    createBusyCalendar({
+      getUrl: () => getSetting('busy_calendar_url') || '',
+      timeZone: config.timezone,
+      windowDays: config.bookingWindowDays,
+    });
+
+  function slotsFor(date, duration) {
     if (date > lastBookableDate()) return [];
     const bookings = db
-      .prepare(
-        "SELECT id, time, duration FROM bookings WHERE date = ? AND status = 'confirmed'",
-      )
-      .all(date)
-      .filter((b) => b.id !== excludeBookingId);
-    const blocks = db.prepare('SELECT start, end FROM blocks WHERE date = ?').all(date);
+      .prepare("SELECT time, duration FROM bookings WHERE date = ? AND status = 'confirmed'")
+      .all(date);
+    const blocks = [
+      ...db.prepare('SELECT start, end FROM blocks WHERE date = ?').all(date),
+      ...calendar.blocksFor(date),
+    ];
     return getSlots({
       date,
       duration,
@@ -44,10 +63,46 @@ function createApp({ db, config, adminPassword, clock = () => new Date() }) {
     });
   }
 
-  const activeService = (id) =>
-    db
-      .prepare('SELECT * FROM services WHERE id = ? AND active = 1 AND bookable = 1')
-      .get(Number(id));
+  const perNail = (service) => /\bper\b/i.test(service.price_note);
+
+  // Validate a basket of treatments: [{ serviceId, qty }].
+  // Returns { items, duration, price, label } or { error }.
+  function resolveItems(input) {
+    if (!Array.isArray(input) || input.length === 0) return { error: 'Please choose a treatment.' };
+    if (input.length > MAX_ITEMS) return { error: `Please choose up to ${MAX_ITEMS} treatments.` };
+    const seen = new Set();
+    const items = [];
+    for (const raw of input) {
+      const service = db
+        .prepare('SELECT * FROM services WHERE id = ? AND active = 1')
+        .get(Number(raw?.serviceId));
+      if (!service || seen.has(service.id)) return { error: 'Please choose your treatments again.' };
+      seen.add(service.id);
+      // Only "per nail" style prices take a quantity; everything else is one each.
+      const qty = perNail(service) ? Math.min(Math.max(parseInt(raw.qty, 10) || 1, 1), MAX_QTY) : 1;
+      items.push({ service, qty });
+    }
+    if (!items.some((i) => i.service.bookable)) {
+      return { error: 'Extras need to go with a main treatment. Please add one.' };
+    }
+    const duration = items.reduce((t, i) => t + i.service.duration * (perNail(i.service) ? i.qty : 1), 0);
+    const price = items.reduce((t, i) => t + i.service.price * i.qty, 0);
+    const label = items
+      .map((i) => (i.qty > 1 ? `${i.service.name} ×${i.qty}` : i.service.name))
+      .join(' + ');
+    return { items, duration, price: Math.round(price * 100) / 100, label };
+  }
+
+  // Query-string form of a basket: "3,5,12x2".
+  function parseItemsQuery(value) {
+    return String(value || '')
+      .split(',')
+      .filter(Boolean)
+      .map((part) => {
+        const [serviceId, qty] = part.split('x');
+        return { serviceId, qty };
+      });
+  }
 
   function badRequest(res, message) {
     res.status(400).json({ error: message });
@@ -74,35 +129,37 @@ function createApp({ db, config, adminPassword, clock = () => new Date() }) {
   });
 
   // Which days between `from` and `to` have at least one free slot.
-  app.get('/api/availability/days', (req, res) => {
-    const { serviceId, from, to } = req.query;
-    const service = activeService(serviceId);
-    if (!service) return badRequest(res, 'Unknown service');
+  app.get('/api/availability/days', async (req, res) => {
+    const { from, to } = req.query;
+    const basket = resolveItems(parseItemsQuery(req.query.items));
+    if (basket.error) return badRequest(res, basket.error);
     if (!DATE_RE.test(from) || !DATE_RE.test(to)) return badRequest(res, 'Invalid date range');
+    await calendar.ensureFresh();
     const days = {};
     for (let d = from, i = 0; d <= to && i < 62; d = addDays(d, 1), i++) {
-      days[d] = slotsFor(d, service.duration).length > 0;
+      days[d] = slotsFor(d, basket.duration).length > 0;
     }
     res.json(days);
   });
 
-  app.get('/api/availability', (req, res) => {
-    const { serviceId, date } = req.query;
-    const service = activeService(serviceId);
-    if (!service) return badRequest(res, 'Unknown service');
+  app.get('/api/availability', async (req, res) => {
+    const { date } = req.query;
+    const basket = resolveItems(parseItemsQuery(req.query.items));
+    if (basket.error) return badRequest(res, basket.error);
     if (!DATE_RE.test(date)) return badRequest(res, 'Invalid date');
-    res.json(slotsFor(date, service.duration));
+    await calendar.ensureFresh();
+    res.json(slotsFor(date, basket.duration));
   });
 
-  app.post('/api/bookings', (req, res) => {
+  app.post('/api/bookings', async (req, res) => {
     const body = req.body || {};
-    const service = activeService(body.serviceId);
+    const basket = resolveItems(body.items);
     const name = cleanText(body.name, 100);
     const phone = cleanText(body.phone, 30);
     const email = cleanText(body.email, 150);
     const notes = cleanText(body.notes, 500);
 
-    if (!service) return badRequest(res, 'Please choose a treatment.');
+    if (basket.error) return badRequest(res, basket.error);
     if (!DATE_RE.test(body.date) || !TIME_RE.test(body.time)) {
       return badRequest(res, 'Please choose a date and time.');
     }
@@ -112,34 +169,62 @@ function createApp({ db, config, adminPassword, clock = () => new Date() }) {
       return badRequest(res, 'Please enter a valid email address.');
     }
 
+    await calendar.ensureFresh();
+
     // Re-check and insert atomically so two people can't grab the same slot.
     db.exec('BEGIN IMMEDIATE');
     try {
-      if (!slotsFor(body.date, service.duration).includes(body.time)) {
+      if (!slotsFor(body.date, basket.duration).includes(body.time)) {
         db.exec('ROLLBACK');
         return res
           .status(409)
           .json({ error: 'Sorry, that time has just been taken. Please pick another.' });
       }
       const ref = crypto.randomBytes(3).toString('hex').toUpperCase();
-      db.prepare(
+      const main = basket.items.find((i) => i.service.bookable).service;
+      const { lastInsertRowid } = db.prepare(
         `INSERT INTO bookings (ref, service_id, service_name, price, date, time, duration, name, phone, email, notes)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).run(ref, service.id, service.name, service.price, body.date, body.time,
-        service.duration, name, phone, email, notes);
+      ).run(ref, main.id, basket.label, basket.price, body.date, body.time,
+        basket.duration, name, phone, email, notes);
+      const addItem = db.prepare(
+        'INSERT INTO booking_items (booking_id, service_id, name, price, qty) VALUES (?, ?, ?, ?, ?)',
+      );
+      for (const { service, qty } of basket.items) {
+        addItem.run(lastInsertRowid, service.id, service.name, service.price, qty);
+      }
       db.exec('COMMIT');
       res.status(201).json({
         ref,
-        service: service.name,
-        price: service.price,
+        service: basket.label,
+        price: basket.price,
         date: body.date,
         time: body.time,
-        duration: service.duration,
+        duration: basket.duration,
       });
     } catch (err) {
       db.exec('ROLLBACK');
       throw err;
     }
+  });
+
+  // Bookings feed for Della's phone calendar. The token in the address is the only key.
+  app.get('/calendar/:token.ics', (req, res) => {
+    const expected = Buffer.from(getSetting('feed_token'));
+    const given = Buffer.from(String(req.params.token));
+    if (given.length !== expected.length || !crypto.timingSafeEqual(given, expected)) {
+      return res.status(404).send('Not found');
+    }
+    const bookings = db
+      .prepare("SELECT * FROM bookings WHERE status = 'confirmed' AND date >= ? ORDER BY date, time")
+      .all(addDays(now().date, -60));
+    res.type('text/calendar; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(bookingsToIcs(bookings, {
+      timeZone: config.timezone,
+      calendarName: `${config.businessName} bookings`,
+      currencySymbol: config.currencySymbol,
+    }));
   });
 
   // ---------- admin ----------
@@ -335,6 +420,31 @@ function createApp({ db, config, adminPassword, clock = () => new Date() }) {
   app.delete('/api/admin/blocks/:id', (req, res) => {
     db.prepare('DELETE FROM blocks WHERE id = ?').run(Number(req.params.id));
     res.json({ ok: true });
+  });
+
+  app.get('/api/admin/calendar', async (req, res) => {
+    await calendar.ensureFresh();
+    res.json({
+      feedPath: `/calendar/${getSetting('feed_token')}.ics`,
+      busyUrl: getSetting('busy_calendar_url') || '',
+      status: calendar.status(),
+    });
+  });
+
+  app.put('/api/admin/calendar', async (req, res) => {
+    const url = cleanText(req.body?.busyUrl, 2000);
+    if (url && !/^(https|webcals?):\/\/\S+$/i.test(url)) {
+      return badRequest(res, 'That should be a web address starting with https:// or webcal://');
+    }
+    setSetting('busy_calendar_url', url);
+    await calendar.refreshNow();
+    res.json({ status: calendar.status() });
+  });
+
+  // Makes a new feed address, so anyone with the old one loses access.
+  app.post('/api/admin/calendar/reset-feed', (req, res) => {
+    setSetting('feed_token', crypto.randomBytes(18).toString('base64url'));
+    res.json({ feedPath: `/calendar/${getSetting('feed_token')}.ics` });
   });
 
   app.use((err, req, res, next) => {

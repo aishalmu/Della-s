@@ -18,7 +18,7 @@ const DEFAULT_SERVICES = [
   ['Toes', 'Plain BIAB Toes', '', 18, '', 45, 1],
   ['Toes', 'Plain Acrylic Toes', '', 22, '', 60, 1],
   ['Toes', 'Gel Overlay / Nail Art', '', 2, 'extra', 10, 0],
-  ['Extra Services', 'Nail Repair / Extension', '', 2, 'per nail', 10, 0],
+  ['Extra Services', 'Nail Repair / Extension', '', 2, 'per nail', 5, 0],
   ['Extra Services', 'Soak Off', '', 10, '', 20, 1],
 ];
 
@@ -69,6 +69,16 @@ function openDatabase(file) {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS bookings_date ON bookings(date);
+
+    CREATE TABLE IF NOT EXISTS booking_items (
+      id INTEGER PRIMARY KEY,
+      booking_id INTEGER NOT NULL REFERENCES bookings(id),
+      service_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      price REAL NOT NULL,
+      qty INTEGER NOT NULL DEFAULT 1
+    );
+    CREATE INDEX IF NOT EXISTS booking_items_booking ON booking_items(booking_id);
 
     CREATE TABLE IF NOT EXISTS blocks (
       id INTEGER PRIMARY KEY,

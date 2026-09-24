@@ -19,6 +19,7 @@
       <button type="button" data-tab="services">Prices</button>
       <button type="button" data-tab="hours">Hours</button>
       <button type="button" data-tab="timeoff">Time off</button>
+      <button type="button" data-tab="calendar">Calendar</button>
     </nav>
     <button type="button" class="link" id="logout" hidden>Log out</button>
   </header>
@@ -72,6 +73,76 @@
         <button class="btn wide" type="submit">Block this time</button>
       </form>
       <ul id="blocks" class="block-list"></ul>
+    </section>
+    <section data-view="calendar" class="card" hidden>
+      <h2 class="section-title left">Calendar</h2>
+      <p class="hint">Link the website to your phone's calendar once, then you can run everything from your calendar.</p>
+
+      <div class="cal-part">
+        <h3>1. See bookings in your calendar</h3>
+        <p>New bookings appear in your calendar automatically, with the client's name, treatments, phone number and notes.</p>
+        <div class="feed-box">
+          <input id="feed-url" readonly aria-label="Your bookings calendar link">
+          <button type="button" class="small-btn" id="copy-feed">Copy</button>
+        </div>
+        <p id="copy-msg" class="ok" hidden>Copied ✓</p>
+        <details>
+          <summary>iPhone or iPad</summary>
+          <ol>
+            <li>On your iPhone, tap <a id="webcal-link" href="#">Add to my iPhone calendar</a> and choose <strong>Subscribe</strong>.</li>
+            <li>If nothing happens, copy the link above, then go to <strong>Settings → Apps → Calendar → Calendar Accounts → Add Account → Other → Add Subscribed Calendar</strong>, paste it and tap <strong>Next → Save</strong>.</li>
+            <li>To see new bookings sooner, go to <strong>Settings → Apps → Calendar → Calendar Accounts → Fetch New Data</strong> and pick <strong>Every 15 minutes</strong>.</li>
+          </ol>
+        </details>
+        <details>
+          <summary>Google Calendar</summary>
+          <ol>
+            <li>On a computer, open <a href="https://calendar.google.com/calendar/r/settings/addbyurl" target="_blank" rel="noopener">Google Calendar → Add calendar from URL</a>.</li>
+            <li>Paste the link above and click <strong>Add calendar</strong>.</li>
+            <li>Google checks for new bookings every few hours, so it can be slow to show new ones. The iPhone option updates faster.</li>
+          </ol>
+        </details>
+        <details>
+          <summary>Outlook</summary>
+          <ol>
+            <li>In Outlook on the web, go to <strong>Calendar → Add calendar → Subscribe from web</strong>.</li>
+            <li>Paste the link above, give it a name and click <strong>Import</strong>.</li>
+          </ol>
+        </details>
+        <p class="hint">Keep this link private: anyone with it can see your bookings. If it gets shared by mistake, <button type="button" class="inline-link" id="reset-feed">make a new link</button> and subscribe again.</p>
+      </div>
+
+      <div class="cal-part">
+        <h3>2. Block times from your calendar</h3>
+        <p>Paste your own calendar's private link here. Anything in your calendar, like appointments, school runs or holidays, stops clients booking that time. Events you've set to "Free" don't block anything.</p>
+        <form id="busy-form" class="feed-box">
+          <input id="busy-url" type="url" inputmode="url" placeholder="https://… or webcal://…" aria-label="Your calendar's private link">
+          <button type="submit" class="small-btn">Save</button>
+        </form>
+        <p id="busy-status" class="hint"></p>
+        <details>
+          <summary>Where do I find my calendar's link? (iPhone / iCloud)</summary>
+          <ol>
+            <li>Open the <strong>Calendar</strong> app and tap <strong>Calendars</strong> at the bottom.</li>
+            <li>Tap the <strong>ⓘ</strong> next to the calendar you use for personal plans.</li>
+            <li>Turn on <strong>Public Calendar</strong>, tap <strong>Share Link…</strong> then <strong>Copy</strong>, and paste it above. The link is long and random, so nobody can find it unless you share it.</li>
+          </ol>
+        </details>
+        <details>
+          <summary>Where do I find my calendar's link? (Google)</summary>
+          <ol>
+            <li>On a computer, open Google Calendar, click the <strong>⚙ Settings</strong> cog, then click your calendar's name on the left.</li>
+            <li>Scroll to <strong>Integrate calendar</strong> and copy <strong>Secret address in iCal format</strong>. Paste it above.</li>
+          </ol>
+        </details>
+        <details>
+          <summary>Where do I find my calendar's link? (Outlook)</summary>
+          <ol>
+            <li>In Outlook on the web, go to <strong>Settings → Calendar → Shared calendars</strong>.</li>
+            <li>Under <strong>Publish a calendar</strong>, choose your calendar and <strong>Can view all details</strong>, click <strong>Publish</strong>, then copy the <strong>ICS</strong> link and paste it above.</li>
+          </ol>
+        </details>
+      </div>
     </section>
   </main>
 
