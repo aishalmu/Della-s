@@ -31,6 +31,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         navigateFallback: 'index.html',
+        // The sign-in page is served by the server, never from the offline cache.
+        navigateFallbackDenylist: [/^\/login/, /^\/healthz/],
       },
     }),
   ],

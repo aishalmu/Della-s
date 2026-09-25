@@ -421,3 +421,7 @@ input[type=range]::-moz-range-thumb {
 /* Each page settles in gently. */
 @keyframes page-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .content > .page { animation: page-in .28s ease both; }
+
+/* Vision board: 3 across, 2 across on phones. */
+.vision-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 560px) { .vision-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

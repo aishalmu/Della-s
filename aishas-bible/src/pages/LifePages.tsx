@@ -20,7 +20,7 @@ export function Goals() {
           style={{ flex: 1, minWidth: 200, fontFamily: 'var(--serif)', fontSize: 36, fontStyle: 'italic', color: 'var(--paper)', padding: '4px 2px' }}
         />
       </div>
-      <div className="grid" style={{ gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 12 }}>
+      <div className="vision-grid">
         {Array.from({ length: 6 }, (_, i) => (
           <PhotoSlot key={i} id={'vision-' + i} radius={14} placeholder="Vision board image" />
         ))}

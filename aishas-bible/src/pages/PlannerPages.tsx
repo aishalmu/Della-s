@@ -1,5 +1,6 @@
 import { Area, Check, Line, Pick } from '../components/fields';
 import { DayNav, PageHead, PrevNext } from '../components/PageHead';
+import { PhotoSlot } from '../components/PhotoSlot';
 import { DN, EVENT_TYPES, HABITS, MN, MOODS } from '../lib/constants';
 import {
   addDays, daysInMonth, greeting, leadBlanks, longDate, monday, monthLabel, plannerMonths,
@@ -83,6 +84,18 @@ export function Home() {
           <span style={{ fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 28, color: 'var(--ink)' }}>{promptFor(clamp(today))}</span>
           <span style={{ fontSize: 14, color: 'var(--olive)', whiteSpace: 'nowrap' }}>Write →</span>
         </button>
+      </div>
+
+      <div style={{ borderTop: '1px solid var(--card-border)', paddingTop: 22 }}>
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 14 }}>
+          <h2 className="ctitle lg" style={{ margin: 0 }}>Vision board</h2>
+          <button className="link-btn" onClick={() => setPage('goals')}>My goals →</button>
+        </div>
+        <div className="vision-grid">
+          {Array.from({ length: 6 }, (_, i) => (
+            <PhotoSlot key={i} id={'vision-' + i} radius={14} placeholder="Vision board image" />
+          ))}
+        </div>
       </div>
     </div>
   );

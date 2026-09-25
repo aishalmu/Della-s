@@ -48,22 +48,47 @@ npm run preview   # serve the build locally
 `npm run icons` redraws the home-screen icons with Playwright:
 `NODE_PATH="$(npm root -g)" npm run icons`.
 
-## Put it online and install it on the iPad
+## Put it online (password protected)
 
-An iPad can only install the app from an `https://` address, so `dist/` has to be hosted
-somewhere. It is a static site with no server code, and it uses relative paths, so any
-static host works:
+`npm start` runs a small server (`server/`) that shows a sign-in page and only
+serves the planner after the right password. The password comes from the
+`APP_PASSWORD` environment variable and is never stored in the repo. Signing in
+keeps a device unlocked for about a year; changing `APP_PASSWORD` signs every
+device out. After 10 wrong tries from one address, sign-in pauses for 15 minutes.
+Search engines are told not to index the site.
 
-- **Netlify Drop:** run `npm run build`, then drag the `dist` folder onto
-  <https://app.netlify.com/drop>.
-- **Render / Netlify / Vercel / Cloudflare Pages from this repo:** root directory
-  `aishas-bible`, build command `npm install && npm run build`, publish directory `dist`.
+The planner's entries never reach the server. They stay on the device.
 
-Then on the iPad:
+### Render
 
-1. Open the address in **Safari**.
+Dashboard → **New → Web Service** → this repository, then:
+
+| Setting | Value |
+| --- | --- |
+| Branch | `claude/life-organization-wje5y7` (or wherever this folder is merged) |
+| Root Directory | `aishas-bible` |
+| Runtime | Node |
+| Build Command | `npm install && npm run build` |
+| Start Command | `npm start` |
+| Health Check Path | `/healthz` |
+| Instance type | Free works. It sleeps when unused, so the first sign-in can take up to a minute. Starter keeps it awake. |
+
+Environment variables:
+
+| Key | Value |
+| --- | --- |
+| `APP_PASSWORD` | the password you want (long is better) |
+| `TRUST_PROXY` | `1` |
+| `NODE_VERSION` | `22` |
+
+To try the server locally: `npm run build && APP_PASSWORD=something npm start`, then open <http://localhost:3000>.
+
+## Install it on the iPad
+
+1. Open the Render address (`https://….onrender.com`) in **Safari** and sign in.
 2. Tap **Share → Add to Home Screen**.
-3. Open it from the home screen. It now runs full screen and works without internet.
+3. Open it from the home screen. If it asks for the password again, sign in once more. The home-screen app keeps its own sign-in.
+4. From then on it opens straight away and works without internet.
 
 Updates install themselves the next time the app is opened while online.
 
