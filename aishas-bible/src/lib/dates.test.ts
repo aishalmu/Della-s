@@ -3,7 +3,8 @@ import { clamp, daysBetween, leadBlanks, longDate, monday, plannerMonths, prompt
 
 describe('dates', () => {
   it('clamps into the planner range', () => {
-    expect(ymd(clamp(new Date(2026, 8, 25)))).toBe('2026-10-01');
+    expect(ymd(clamp(new Date(2026, 8, 25)))).toBe('2026-09-25');
+    expect(ymd(clamp(new Date(2026, 7, 20)))).toBe('2026-09-01');
     expect(ymd(clamp(new Date(2028, 0, 3)))).toBe('2027-12-31');
     expect(ymd(clamp(new Date(2027, 4, 9)))).toBe('2027-05-09');
   });
@@ -27,10 +28,11 @@ describe('dates', () => {
     expect(daysBetween(new Date(2026, 9, 20), new Date(2026, 10, 1))).toBe(12);
   });
 
-  it('has 15 planner months ending December 2027', () => {
+  it('has 16 planner months, September 2026 to December 2027', () => {
     const m = plannerMonths();
-    expect(m).toHaveLength(15);
-    expect(ymd(m[14])).toBe('2027-12-01');
+    expect(m).toHaveLength(16);
+    expect(ymd(m[0])).toBe('2026-09-01');
+    expect(ymd(m[15])).toBe('2027-12-01');
   });
 
   it('rotates prompts by day of year', () => {

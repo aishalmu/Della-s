@@ -3,7 +3,7 @@ import { DayNav, PageHead, PrevNext } from '../components/PageHead';
 import { DN, EVENT_TYPES, HABITS, MN, MOODS } from '../lib/constants';
 import {
   addDays, daysInMonth, greeting, leadBlanks, longDate, monday, monthLabel, plannerMonths,
-  promptFor, shortDate, weekLabel, ym, ymd, clamp,
+  promptFor, rangeLabel, shortDate, weekLabel, ym, ymd, clamp,
 } from '../lib/dates';
 import { useNav } from '../lib/nav';
 import { dayInfo, nextTrip, pilatesCount, readingSummary } from '../lib/planner';
@@ -90,7 +90,7 @@ export function Year() {
   const { todayKey, openDay, setDay, setPage } = useNav();
   return (
     <div className="page roomy">
-      <PageHead eyebrow="Year at a glance" title="October 2026 – December 2027" />
+      <PageHead eyebrow="Year at a glance" title={rangeLabel()} />
       <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(230px,1fr))', gap: 18 }}>
         {plannerMonths().map((f) => {
           const y = f.getFullYear();

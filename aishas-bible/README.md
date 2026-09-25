@@ -1,6 +1,6 @@
 # Aisha’s Bible
 
-A personal life planner for 1 October 2026 – 31 December 2027, built from the
+A personal life planner for 1 September 2026 – 31 December 2027, built from the
 `design_handoff_aishas_bible` design. It runs in the browser, works offline and
 can be installed on an iPad home screen.
 

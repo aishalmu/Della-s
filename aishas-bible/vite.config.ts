@@ -14,7 +14,7 @@ export default defineConfig({
       manifest: {
         name: 'Aisha’s Bible',
         short_name: 'Aisha’s Bible',
-        description: 'My life planner, October 2026 – December 2027',
+        description: 'My life planner, September 2026 – December 2027',
         lang: 'en-GB',
         start_url: './',
         scope: './',

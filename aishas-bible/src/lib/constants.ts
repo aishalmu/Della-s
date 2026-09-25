@@ -1,4 +1,5 @@
-export const START = new Date(2026, 9, 1);
+/** Planner range. Started early so it begins in the month Aisha started using it. */
+export const START = new Date(2026, 8, 1);
 export const END = new Date(2027, 11, 31);
 
 export const MN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];

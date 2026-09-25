@@ -43,5 +43,15 @@ export const greeting = (now: Date) => {
   return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
 };
 
-/** The 15 planner months, Oct 2026 – Dec 2027, as first-of-month dates. */
-export const plannerMonths = () => Array.from({ length: 15 }, (_, i) => new Date(2026, 9 + i, 1));
+/** Every month in the planner range, as first-of-month dates. */
+export const plannerMonths = () => {
+  const n = (END.getFullYear() - START.getFullYear()) * 12 + END.getMonth() - START.getMonth() + 1;
+  return Array.from({ length: n }, (_, i) => new Date(START.getFullYear(), START.getMonth() + i, 1));
+};
+/** "September 2026 – December 2027" */
+export const rangeLabel = () => monthLabel(START) + ' – ' + monthLabel(END);
+/** "Sep 26 — Dec 27", for the sidebar stamp. */
+export const stampLabel = () => {
+  const s = (d: Date) => MN[d.getMonth()].slice(0, 3) + ' ' + String(d.getFullYear()).slice(2);
+  return s(START) + ' — ' + s(END);
+};

@@ -2,7 +2,7 @@
   "name": "aishas-bible",
   "private": true,
   "version": "1.0.0",
-  "description": "Aisha's Bible: a personal life planner (Oct 2026 – Dec 2027) that works offline and installs on iPad",
+  "description": "Aisha's Bible: a personal life planner (Sep 2026 – Dec 2027) that works offline and installs on iPad",
   "type": "module",
   "scripts": {
     "dev": "vite",

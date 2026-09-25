@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { BackupDialog, readLastBackup } from './components/BackupDialog';
 import { NAV, NAV_GROUPS, type PageId } from './lib/constants';
-import { daysBetween } from './lib/dates';
+import { daysBetween, stampLabel } from './lib/dates';
 import { useNav } from './lib/nav';
 import { useStore } from './lib/store';
 import { Budget, Care, Cleaning, Goals, Habits, Meals } from './pages/LifePages';
@@ -52,7 +52,7 @@ export function App() {
           <div className="stamp">
             <div className="stamp-small">Passport · Life</div>
             <div className="stamp-name">Aisha’s<br />Bible</div>
-            <div className="stamp-small dates">Oct 26 — Dec 27</div>
+            <div className="stamp-small dates">{stampLabel()}</div>
           </div>
         </div>
         {NAV_GROUPS.map(([group, items]) => (
