@@ -145,7 +145,7 @@ button:focus-visible, select:focus-visible, input[type=checkbox]:focus-visible, 
 .ctitle { font-family: var(--serif); font-size: 24px; font-weight: 500; font-style: italic; color: var(--ink); }
 .ctitle.lg { font-size: 28px; }
 .label-caps { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
-.big-num { font-family: var(--serif); font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+.big-num { font-family: var(--serif); font-weight: 600; line-height: 1; font-variant-numeric: lining-nums tabular-nums; }
 .hint { font-size: 14px; color: var(--muted-2); }
 
 /* ── Layout helpers ──────────────────────────────────── */
@@ -209,8 +209,22 @@ button:focus-visible, select:focus-visible, input[type=checkbox]:focus-visible, 
 .chip.on { background: var(--olive); color: var(--paper); }
 .chip.rose-on { background: var(--rose); }
 
-.check { accent-color: var(--olive); flex: none; margin: 0; }
-.check.rose { accent-color: var(--rose); }
+/* Checkboxes: rounded paper square with a gold edge; olive with a cream tick when done. */
+.check {
+  -webkit-appearance: none; appearance: none; flex: none; margin: 0; cursor: pointer;
+  border: 1.5px solid var(--gold-border); border-radius: 6px; background: var(--paper);
+  display: inline-grid; place-content: center;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+.check::after {
+  content: ''; width: 9px; height: 5px; margin-top: -2px;
+  border-left: 2px solid var(--paper); border-bottom: 2px solid var(--paper);
+  transform: rotate(-45deg) scale(0); transition: transform .15s ease;
+}
+.check:checked { background: var(--olive); border-color: var(--olive); }
+.check:checked::after { transform: rotate(-45deg) scale(1); }
+.check.rose { border-color: var(--rose); }
+.check.rose:checked { background: var(--rose); border-color: var(--rose); }
 
 /* Borderless inputs with a single bottom rule. */
 .in {
@@ -330,3 +344,80 @@ select.in { cursor: pointer; padding-right: 4px; }
 .compact .tick-cells { flex: none; gap: 6px; }
 .compact .tick, .compact .tick-label { flex: none; width: 40px; }
 .compact .tick-count { flex: 1; }
+
+/* ── Polish ──────────────────────────────────────────── */
+
+/* Finished things fade and get a soft strike-through. */
+:is(.check-row, .row):has(> .check:checked) > .in {
+  text-decoration: line-through;
+  text-decoration-color: rgba(59, 63, 39, .35);
+  color: var(--muted-2);
+}
+
+/* The underline warms to olive while typing. */
+.in { transition: border-color .15s ease; }
+.in:not(.bare):focus { border-bottom-color: var(--olive); }
+.in.sage:focus { border-bottom-color: var(--pink); }
+.ta:focus, .cell-note:focus { background-color: rgba(243, 222, 220, .18); border-radius: 6px; }
+
+/* Dropdowns get a small gold chevron instead of the system arrows. */
+select.in {
+  padding-right: 18px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%239C8F4E' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 4px center;
+}
+select.in.chev-pink {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23F3DEDC' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+select.in option { color: var(--text); background: var(--paper); }
+
+/* Progress slider: olive fill up to the value, paper thumb. */
+input[type=range] {
+  -webkit-appearance: none; appearance: none; height: 6px; border-radius: 999px; cursor: pointer;
+  background: linear-gradient(var(--olive), var(--olive)) 0 / var(--pct, 0%) 100% no-repeat, var(--hairline);
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--paper); border: 1.5px solid var(--olive); box-shadow: 0 2px 6px -2px rgba(59, 63, 39, .5);
+}
+input[type=range]::-moz-range-thumb {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--paper); border: 1.5px solid var(--olive); box-shadow: 0 2px 6px -2px rgba(59, 63, 39, .5);
+}
+
+/* Ticked squares show a cream tick. */
+.tick { display: grid; place-content: center; transition: background-color .15s ease, border-color .15s ease; }
+.tick.on::after { content: '✓'; color: var(--paper); font-size: 12px; line-height: 1; }
+.compact .tick.on::after { font-size: 16px; }
+
+/* Water glasses fill from the bottom. */
+.glass { width: 32px; height: 40px; border-radius: 8px 8px 12px 12px; border: 1px solid var(--sage); cursor: pointer; background: var(--paper); transition: background .2s ease; }
+.glass.on { background: linear-gradient(to top, #B7C08F 0 72%, #DDE2C4 72% 100%); border-color: #A9B27F; }
+
+/* Photo slots: warm paper with a rose dashed edge instead of grey. */
+.slot { background: var(--paper); box-shadow: var(--shadow); }
+.slot-empty { border-color: var(--rose); color: var(--rose-text); transition: background-color .15s ease; }
+.slot-empty svg { opacity: .7; }
+.slot-empty .sub { color: var(--rose-text-2); }
+
+/* Word for the year, echoed on Home. */
+.word-line { margin-top: 10px; font-size: 14px; color: var(--muted); }
+.word-line em { font-family: var(--serif); font-size: 22px; color: var(--olive); padding-left: 4px; }
+
+/* Touch feedback everywhere; hover only on devices that hover. */
+:is(.chip, .tick, .glass, .btn-secondary, .btn-primary, .btn-dashed, .btn-danger, .nav-item, .mini-day):active { transform: scale(.97); }
+@media (hover: hover) and (pointer: fine) {
+  .nav-item:not([aria-current="page"]):hover { background: rgba(243, 222, 220, .45); }
+  .btn-secondary:hover { background: rgba(185, 173, 114, .12); }
+  .btn-dashed:hover { background: rgba(107, 112, 69, .06); }
+  .chip:not(.on):hover { border-color: var(--olive); }
+  .tick:not(.on):hover, .glass:not(.on):hover { border-color: var(--olive); }
+  .mini-day:hover { box-shadow: inset 0 0 0 1px var(--gold-border); }
+  .day-num:hover, .link-btn:hover { color: var(--olive); text-decoration: underline; text-underline-offset: 3px; }
+  .slot-empty:hover { background: var(--pink-tint); }
+}
+
+/* Each page settles in gently. */
+@keyframes page-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.content > .page { animation: page-in .28s ease both; }

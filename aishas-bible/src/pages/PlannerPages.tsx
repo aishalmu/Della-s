@@ -22,6 +22,9 @@ export function Home() {
       <div>
         <div className="eyebrow">{longDate(today)}</div>
         <h1 className="greet" style={{ marginBottom: 0 }}>{greeting(now)}, Aisha</h1>
+        {str(data['gl:word']).trim() && (
+          <div className="word-line">Your word for the year<em>{str(data['gl:word']).trim()}</em></div>
+        )}
       </div>
 
       <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 20 }}>
@@ -147,7 +150,7 @@ export function Month() {
                 <button className="day-num" onClick={() => openDay(k)} aria-label={`Open ${longDate(c)}`}>{c.getDate()}</button>
                 {inf.ev.map((t, j) => <div key={'e' + j} className="tag-ev">{t}</div>)}
                 {[...inf.pr, ...inf.sch].map((t, j) => <div key={'i' + j} className="tag-item">{t}</div>)}
-                <Area k={'m:' + k} className="cell-note" aria-label={`Note for ${longDate(c)}`} />
+                <Area fixed k={'m:' + k} className="cell-note" aria-label={`Note for ${longDate(c)}`} />
               </div>
             );
           })}
@@ -233,7 +236,7 @@ export function Day() {
             </div>
             {[0, 1, 2].map((i) => (
               <div key={i} className="row" style={{ gap: 10, borderBottom: '1px solid var(--olive-line)' }}>
-                <Pick k={`ev:${md}:${i}:type`} options={EVENT_TYPES} blank="Type" className="in bare" style={{ width: 120, color: 'var(--pink)', fontSize: 14, padding: '9px 0' }} aria-label="Celebration type" />
+                <Pick k={`ev:${md}:${i}:type`} options={EVENT_TYPES} blank="Type" className="in bare chev-pink" style={{ width: 120, color: 'var(--pink)', fontSize: 14, padding: '9px 0' }} aria-label="Celebration type" />
                 <Line k={`ev:${md}:${i}`} className="in bare grow" placeholder="Name or occasion" style={{ color: 'var(--paper)', padding: '9px 2px' }} aria-label="Name or occasion" />
               </div>
             ))}
@@ -265,10 +268,10 @@ export function Day() {
                   return (
                     <button
                       key={i}
+                      className={data[k] ? 'glass on' : 'glass'}
                       onClick={() => toggle(k)}
                       aria-pressed={!!data[k]}
                       aria-label={`Glass ${i + 1}`}
-                      style={{ width: 32, height: 40, borderRadius: '8px 8px 12px 12px', border: '1px solid var(--sage)', cursor: 'pointer', background: data[k] ? 'var(--sage)' : 'var(--paper)' }}
                     />
                   );
                 })}

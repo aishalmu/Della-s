@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { useLayoutEffect, useRef, type CSSProperties } from 'react';
 import { str, useStore } from '../lib/store';
 
 interface Base {
@@ -27,9 +27,28 @@ export function Line({ k, def, type = 'text', step, ...rest }: Base & { def?: st
   );
 }
 
-export function Area({ k, rows, ...rest }: Base & { rows?: number }) {
+/** Textarea bound to one key. Grows with its text unless `fixed` (for boxes that fill a card). */
+export function Area({ k, rows, fixed, ...rest }: Base & { rows?: number; fixed?: boolean }) {
   const { data, set } = useStore();
-  return <textarea id={k} rows={rows} value={str(data[k])} onChange={(e) => set(k, e.target.value)} {...rest} />;
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const value = str(data[k]);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || fixed) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }, [value, fixed]);
+  return (
+    <textarea
+      ref={ref}
+      id={k}
+      rows={rows}
+      value={value}
+      onChange={(e) => set(k, e.target.value)}
+      {...rest}
+      style={{ ...rest.style, ...(fixed ? null : { resize: 'none', overflow: 'hidden' }) }}
+    />
+  );
 }
 
 export function Check({ k, size = 18, rose, label }: { k: string; size?: number; rose?: boolean; label?: string }) {
@@ -61,7 +80,18 @@ export function Pick({ k, options, blank = '', ...rest }: Base & { options: stri
 
 export function Range({ k, ...rest }: Base) {
   const { data, set } = useStore();
+  const v = str(data[k] ?? '0') || '0';
   return (
-    <input id={k} type="range" min={0} max={100} step={5} value={str(data[k] ?? '0') || '0'} onChange={(e) => set(k, e.target.value)} {...rest} />
+    <input
+      id={k}
+      type="range"
+      min={0}
+      max={100}
+      step={5}
+      value={v}
+      onChange={(e) => set(k, e.target.value)}
+      {...rest}
+      style={{ ...rest.style, ['--pct' as string]: v + '%' }}
+    />
   );
 }

@@ -53,8 +53,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Typing writes on every keystroke; batch those into one save per pause,
-  // and flush right away when the app is hidden or closed.
+  // and flush right away when the app is hidden or closed. Nothing is written
+  // until something changes, so opening the app never overwrites saved data.
   useEffect(() => {
+    if (latest.current === data) return;
     latest.current = data;
     window.clearTimeout(timer.current);
     timer.current = window.setTimeout(flush, SAVE_DELAY_MS);

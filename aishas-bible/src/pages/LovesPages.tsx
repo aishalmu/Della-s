@@ -103,6 +103,7 @@ export function Create() {
           <div key={i} className="flat-tint stack" style={{ padding: 16, gap: 6, minHeight: 180 }}>
             <Line k={`id${i}:t`} placeholder="Idea" className="in roseline serif" style={{ fontSize: 22, padding: '4px 2px' }} aria-label={`Idea ${i + 1}`} />
             <Area
+              fixed
               k={`id${i}:b`}
               placeholder="Materials, inspiration, steps…"
               style={{ flex: 1, border: 'none', background: 'transparent', resize: 'none', fontSize: 14, lineHeight: 1.5, outline: 'none' }}
@@ -248,7 +249,7 @@ export function Travel() {
         </div>
         <div className="boarding-stub">
           <label htmlFor={tp + 'notes'} style={{ fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--ink)' }}>Notes</label>
-          <Area k={tp + 'notes'} placeholder="Confirmation codes, transfers…" style={{ flex: 1, minHeight: 90, border: 'none', background: 'transparent', resize: 'none', fontSize: 14, lineHeight: 1.5, outline: 'none' }} />
+          <Area fixed k={tp + 'notes'} placeholder="Confirmation codes, transfers…" style={{ flex: 1, minHeight: 90, border: 'none', background: 'transparent', resize: 'none', fontSize: 14, lineHeight: 1.5, outline: 'none' }} />
         </div>
       </div>
 
