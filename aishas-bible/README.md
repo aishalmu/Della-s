@@ -61,12 +61,11 @@ The planner's entries never reach the server. They stay on the device.
 
 ### Render
 
-Dashboard → **New → Web Service** → this repository, then:
+Dashboard → **New → Web Service** → the `aishas-bible` repository, then:
 
 | Setting | Value |
 | --- | --- |
-| Branch | `claude/life-organization-wje5y7` (or wherever this folder is merged) |
-| Root Directory | `aishas-bible` |
+| Branch | `main` |
 | Runtime | Node |
 | Build Command | `npm install && npm run build` |
 | Start Command | `npm start` |
