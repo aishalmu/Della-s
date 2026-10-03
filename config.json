@@ -13,6 +13,7 @@
   "slotIntervalMinutes": 15,
   "minNoticeHours": 12,
   "bookingWindowDays": 60,
+  "depositAmount": 10,
   "announcement": {
     "show": true,
     "title": "Happy Halloween",
@@ -20,6 +21,7 @@
   },
   "policies": [
     "Want nail art, a gel overlay or repairs? Tick them as extras when you book.",
+    "A deposit secures your appointment and comes off your total on the day.",
     "Please give at least 24 hours' notice if you need to cancel or move your appointment.",
     "Running more than 15 minutes late may mean a shorter treatment or rebooking."
   ]

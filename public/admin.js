@@ -81,7 +81,9 @@
 
   function renderBookings() {
     const showCancelled = $('#show-cancelled').checked;
-    const list = bookings.filter((b) => showCancelled || b.status === 'confirmed');
+    // Unpaid holds that ran out are only shown alongside cancelled bookings.
+    const list = bookings.filter((b) =>
+      showCancelled || b.status === 'confirmed' || b.status === 'pending');
     if (!list.length) {
       $('#bookings').replaceChildren(el('p', { className: 'muted', textContent: 'No upcoming bookings yet.' }));
       return;
@@ -98,9 +100,10 @@
   }
 
   function renderBooking(b) {
-    const cancelled = b.status === 'cancelled';
+    const cancelled = b.status === 'cancelled' || b.status === 'expired';
     const phoneDigits = b.phone.replace(/[^\d+]/g, '');
-    const action = el('button', {
+    // A booking waiting on its deposit sorts itself out within half an hour.
+    const action = b.status === 'pending' ? null : el('button', {
       type: 'button',
       className: `small-btn${cancelled ? '' : ' danger'}`,
       textContent: cancelled ? 'Restore' : 'Cancel',
@@ -129,8 +132,20 @@
           }),
           b.email ? ` · ${b.email}` : '',
           ` · ${currency}${b.price} · ${b.duration} min · Ref ${b.ref}`),
+        paymentLine(b),
         b.notes ? el('div', { className: 'notes', textContent: `“${b.notes}”` }) : null),
       action);
+  }
+
+  function paymentLine(b) {
+    let text = '';
+    if (b.status === 'pending') text = 'Waiting for deposit to be paid…';
+    else if (b.status === 'expired') text = 'Deposit never paid, so this time was released';
+    else if (b.deposit_paid) {
+      text = `Deposit ${currency}${b.deposit_paid} paid · ${currency}${b.price - b.deposit_paid} to pay on the day`;
+      if (b.status === 'cancelled') text += ' · refund it in Stripe if needed';
+    }
+    return text ? el('div', { className: `detail pay ${b.status}`, textContent: text }) : null;
   }
 
   $('#show-cancelled').onchange = renderBookings;

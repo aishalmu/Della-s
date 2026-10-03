@@ -17,6 +17,8 @@ services:
         value: "1"
       - key: DATABASE_FILE
         value: /var/data/bookings.db
+      # To take card deposits, add STRIPE_SECRET_KEY in the service's
+      # Environment settings (Stripe Dashboard → Developers → API keys).
     disk:
       name: bookings
       mountPath: /var/data

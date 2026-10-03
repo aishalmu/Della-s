@@ -195,7 +195,10 @@ function bookingsToIcs(bookings, { timeZone, calendarName, currencySymbol }) {
     const end = new Date(start.getTime() + b.duration * 60000);
     const description = [
       b.service_name,
-      `${currencySymbol}${b.price}`,
+      b.deposit_paid
+        ? `${currencySymbol}${b.price} (deposit ${currencySymbol}${b.deposit_paid} paid, ` +
+          `${currencySymbol}${b.price - b.deposit_paid} to pay)`
+        : `${currencySymbol}${b.price}`,
       `Phone: ${b.phone}`,
       b.email && `Email: ${b.email}`,
       b.notes && `Notes: ${b.notes}`,

@@ -192,9 +192,21 @@
     }
   }
 
+  function depositFor(price) {
+    return Math.min(info.depositAmount || 0, price);
+  }
+
   function chooseTime(time) {
     state.time = time;
     $('#summary-4').textContent = `${prettyDate(state.date)} at ${formatTime(time)} · ${basketSummary()}`;
+    const { price } = totals();
+    const deposit = depositFor(price);
+    $('#deposit-note').hidden = !deposit;
+    $('#deposit-note').textContent = deposit
+      ? `A ${money(deposit)} deposit secures your appointment. You'll pay it by card or Apple Pay on the next screen` +
+        `${price > deposit ? `, and the remaining ${money(price - deposit)} on the day` : ''}.`
+      : '';
+    $('#confirm-btn').textContent = deposit ? `Pay ${money(deposit)} deposit` : 'Confirm booking';
     $('#form-error').hidden = true;
     showStep(4);
     $('#name').focus();
@@ -217,20 +229,77 @@
           ...Object.fromEntries(new FormData(form)),
         }),
       });
-      $('#confirmation').replaceChildren(
-        `${booking.service} on ${prettyDate(booking.date)} at ${formatTime(booking.time)} (${money(booking.price)}). `,
-        'See you then! Your reference is ',
-        el('span', { className: 'ref', textContent: booking.ref }),
-      );
+      if (booking.checkoutUrl) {
+        // Remember the basket in case they come back from the payment page.
+        try {
+          sessionStorage.setItem('della-basket', JSON.stringify([...basket]));
+        } catch {}
+        btn.textContent = 'Taking you to payment…';
+        location.href = booking.checkoutUrl;
+        return;
+      }
       form.reset();
-      showStep('done');
+      showConfirmed(booking);
     } catch (err) {
       $('#form-error').textContent = err.message;
       $('#form-error').hidden = false;
       if (err.status === 409) setTimeout(() => chooseDate(state.date), 1800);
-    } finally {
-      btn.disabled = false;
     }
+    btn.disabled = false;
+  }
+
+  function showConfirmed(booking) {
+    const paid = booking.deposit
+      ? ` Deposit of ${money(booking.deposit)} paid, ${money(booking.price - booking.deposit)} to pay on the day.`
+      : ` (${money(booking.price)})`;
+    $('#confirmation').replaceChildren(
+      `${booking.service} on ${prettyDate(booking.date)} at ${formatTime(booking.time)}.${paid} `,
+      'See you then! Your reference is ',
+      el('span', { className: 'ref', textContent: booking.ref }),
+    );
+    showStep('done');
+  }
+
+  // Coming back from the Stripe payment page.
+  async function handlePaymentReturn(params) {
+    history.replaceState(null, '', location.pathname);
+    if (params.get('paid')) {
+      $('#picker').replaceChildren(el('p', { className: 'muted', textContent: 'Confirming your payment…' }));
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          const booking = await api(
+            `/api/bookings/${encodeURIComponent(params.get('paid'))}/payment?session_id=${encodeURIComponent(params.get('session_id') || '')}`,
+          );
+          if (booking.status === 'confirmed') return showConfirmed(booking);
+        } catch {
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+      renderPicker();
+      $('#picker-error').textContent =
+        "We couldn't confirm your payment yet. If money has left your account, your booking is safe: message Della on WhatsApp with your reference " +
+        params.get('paid') + '.';
+      $('#picker-error').hidden = false;
+      return true;
+    }
+    if (params.get('cancelled')) {
+      api(`/api/bookings/${encodeURIComponent(params.get('cancelled'))}/abandon`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: params.get('t') }),
+      }).catch(() => {});
+      try {
+        for (const [id, qty] of JSON.parse(sessionStorage.getItem('della-basket') || '[]')) {
+          if (services.some((x) => x.id === id)) basket.set(id, qty);
+        }
+      } catch {}
+      renderPicker();
+      $('#picker-error').textContent = "Payment cancelled, so you haven't been booked in. Your treatments are still ticked if you'd like to try again.";
+      $('#picker-error').hidden = false;
+      return true;
+    }
+    return false;
   }
 
   // ---------- wire up ----------
@@ -257,7 +326,9 @@
     .then(([i, s]) => {
       info = i;
       services = s;
-      const preselect = Number(new URLSearchParams(location.search).get('add'));
+      const params = new URLSearchParams(location.search);
+      if (params.get('paid') || params.get('cancelled')) return handlePaymentReturn(params);
+      const preselect = Number(params.get('add'));
       if (services.some((x) => x.id === preselect)) basket.set(preselect, 1);
       renderPicker();
     })

@@ -4,14 +4,18 @@ const express = require('express');
 const { openDatabase } = require('./db');
 const { weekday, addDays, nowInTimeZone, getSlots, toMinutes } = require('./availability');
 const { createBusyCalendar, bookingsToIcs } = require('./calendar');
+const { createStripe } = require('./payments');
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 const SESSION_HOURS = 12;
 const MAX_ITEMS = 8;
 const MAX_QTY = 10;
+// A slot is held while the client pays. Stripe's shortest checkout lifetime is 30 minutes.
+const CHECKOUT_MINUTES = 31;
+const HOLD_GRACE_MS = 5 * 60 * 1000;
 
-function createApp({ db, config, adminPassword, clock = () => new Date(), busyCalendar }) {
+function createApp({ db, config, adminPassword, clock = () => new Date(), busyCalendar, stripe, publicUrl }) {
   const app = express();
   app.use(express.json({ limit: '20kb' }));
   // extensions: lets /prices serve prices.html
@@ -42,11 +46,16 @@ function createApp({ db, config, adminPassword, clock = () => new Date(), busyCa
       windowDays: config.bookingWindowDays,
     });
 
+  // Deposits are taken only when Stripe is set up and a deposit amount is configured.
+  const depositAmount = stripe ? Number(config.depositAmount) || 0 : 0;
+
+  // Confirmed bookings, plus ones still waiting for their deposit to be paid.
+  const takenSql = `SELECT id, time, duration FROM bookings WHERE date = ?
+    AND (status = 'confirmed' OR (status = 'pending' AND expires_at > ?))`;
+
   function slotsFor(date, duration) {
     if (date > lastBookableDate()) return [];
-    const bookings = db
-      .prepare("SELECT time, duration FROM bookings WHERE date = ? AND status = 'confirmed'")
-      .all(date);
+    const bookings = db.prepare(takenSql).all(date, clock().getTime() - HOLD_GRACE_MS);
     const blocks = [
       ...db.prepare('SELECT start, end FROM blocks WHERE date = ?').all(date),
       ...calendar.blocksFor(date),
@@ -115,7 +124,13 @@ function createApp({ db, config, adminPassword, clock = () => new Date(), busyCa
   // ---------- public API ----------
 
   app.get('/api/info', (req, res) => {
-    res.json({ ...config, hours: getHours(), today: now().date, lastDate: lastBookableDate() });
+    res.json({
+      ...config,
+      depositAmount,
+      hours: getHours(),
+      today: now().date,
+      lastDate: lastBookableDate(),
+    });
   });
 
   app.get('/api/services', (req, res) => {
@@ -172,6 +187,7 @@ function createApp({ db, config, adminPassword, clock = () => new Date(), busyCa
     await calendar.ensureFresh();
 
     // Re-check and insert atomically so two people can't grab the same slot.
+    let bookingId;
     db.exec('BEGIN IMMEDIATE');
     try {
       if (!slotsFor(body.date, basket.duration).includes(body.time)) {
@@ -182,30 +198,161 @@ function createApp({ db, config, adminPassword, clock = () => new Date(), busyCa
       }
       const ref = crypto.randomBytes(3).toString('hex').toUpperCase();
       const main = basket.items.find((i) => i.service.bookable).service;
+      const deposit = Math.min(depositAmount, basket.price);
       const { lastInsertRowid } = db.prepare(
-        `INSERT INTO bookings (ref, service_id, service_name, price, date, time, duration, name, phone, email, notes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO bookings (ref, service_id, service_name, price, date, time, duration, name, phone, email, notes,
+           status, deposit, cancel_token, expires_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(ref, main.id, basket.label, basket.price, body.date, body.time,
-        basket.duration, name, phone, email, notes);
+        basket.duration, name, phone, email, notes,
+        deposit > 0 ? 'pending' : 'confirmed', deposit,
+        crypto.randomBytes(12).toString('base64url'),
+        clock().getTime() + CHECKOUT_MINUTES * 60 * 1000);
       const addItem = db.prepare(
         'INSERT INTO booking_items (booking_id, service_id, name, price, qty) VALUES (?, ?, ?, ?, ?)',
       );
       for (const { service, qty } of basket.items) {
         addItem.run(lastInsertRowid, service.id, service.name, service.price, qty);
       }
+      bookingId = lastInsertRowid;
       db.exec('COMMIT');
-      res.status(201).json({
-        ref,
-        service: basket.label,
-        price: basket.price,
-        date: body.date,
-        time: body.time,
-        duration: basket.duration,
-      });
     } catch (err) {
       db.exec('ROLLBACK');
       throw err;
     }
+
+    const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(bookingId);
+    if (booking.status === 'confirmed') return res.status(201).json(summary(booking));
+
+    // Send the client to Stripe to pay the deposit; the slot is held meanwhile.
+    try {
+      const session = await createCheckout(booking, baseUrl(req));
+      db.prepare('UPDATE bookings SET stripe_session = ? WHERE id = ?').run(session.id, booking.id);
+      res.status(201).json({ ref: booking.ref, checkoutUrl: session.url });
+    } catch (err) {
+      console.error(`Stripe checkout failed: ${err.message}`);
+      db.prepare("UPDATE bookings SET status = 'expired' WHERE id = ?").run(booking.id);
+      res.status(502).json({
+        error: "Sorry, card payments aren't working right now. Please message Della on WhatsApp to book.",
+      });
+    }
+  });
+
+  // ---------- deposits ----------
+
+  function summary(b) {
+    return {
+      ref: b.ref,
+      status: b.status,
+      service: b.service_name,
+      price: b.price,
+      deposit: b.deposit_paid,
+      date: b.date,
+      time: b.time,
+      duration: b.duration,
+    };
+  }
+
+  function baseUrl(req) {
+    return (publicUrl || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+  }
+
+  const fmtDate = (iso) =>
+    new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-GB', {
+      weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC',
+    });
+
+  function createCheckout(b, base) {
+    return stripe.createCheckoutSession({
+      mode: 'payment',
+      client_reference_id: b.ref,
+      customer_email: b.email || undefined,
+      line_items: {
+        0: {
+          quantity: 1,
+          price_data: {
+            currency: 'gbp',
+            unit_amount: Math.round(b.deposit * 100),
+            product_data: {
+              name: `Deposit for ${config.businessName} ${config.businessSubtitle}`.trim(),
+              description: `${b.service_name} on ${fmtDate(b.date)} at ${b.time}. ` +
+                `${config.currencySymbol}${b.price - b.deposit} left to pay on the day.`,
+            },
+          },
+        },
+      },
+      payment_intent_data: { description: `Booking ${b.ref}: ${b.name}, ${b.date} ${b.time}` },
+      metadata: { booking_ref: b.ref },
+      expires_at: Math.floor(b.expires_at / 1000),
+      success_url: `${base}/book?paid=${b.ref}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${base}/book?cancelled=${b.ref}&t=${b.cancel_token}`,
+    });
+  }
+
+  // Bring a pending booking up to date with its Stripe checkout.
+  async function syncPayment(b) {
+    if (b.status !== 'pending' || !b.stripe_session) return b;
+    const session = await stripe.retrieveCheckoutSession(b.stripe_session);
+    if (session.payment_status === 'paid') {
+      db.prepare(
+        "UPDATE bookings SET status = 'confirmed', deposit_paid = ? WHERE id = ? AND status = 'pending'",
+      ).run((session.amount_total ?? b.deposit * 100) / 100, b.id);
+    } else if (session.status === 'expired') {
+      db.prepare("UPDATE bookings SET status = 'expired' WHERE id = ? AND status = 'pending'").run(b.id);
+    }
+    return db.prepare('SELECT * FROM bookings WHERE id = ?').get(b.id);
+  }
+
+  // Catch payments where the client closed the page before coming back,
+  // and release holds that were never paid.
+  async function sweepPayments() {
+    if (!stripe) return;
+    const stale = db
+      .prepare("SELECT * FROM bookings WHERE status = 'pending' AND expires_at < ?")
+      .all(clock().getTime());
+    for (const b of stale) {
+      if (!b.stripe_session) {
+        db.prepare("UPDATE bookings SET status = 'expired' WHERE id = ?").run(b.id);
+        continue;
+      }
+      try {
+        await syncPayment(b);
+      } catch (err) {
+        console.warn(`Could not check payment for ${b.ref}: ${err.message}`);
+      }
+    }
+  }
+  app.locals.sweepPayments = sweepPayments;
+
+  // The client lands here after paying on Stripe.
+  app.get('/api/bookings/:ref/payment', async (req, res) => {
+    const b = db.prepare('SELECT * FROM bookings WHERE ref = ?').get(String(req.params.ref));
+    if (!b || !b.stripe_session || b.stripe_session !== String(req.query.session_id || '')) {
+      return res.status(404).json({ error: "We couldn't find that booking." });
+    }
+    try {
+      res.json(summary(await syncPayment(b)));
+    } catch (err) {
+      console.error(`Stripe check failed: ${err.message}`);
+      res.json(summary(b));
+    }
+  });
+
+  // The client pressed "back" on the Stripe page: release the slot straight away.
+  app.post('/api/bookings/:ref/abandon', async (req, res) => {
+    const b = db.prepare('SELECT * FROM bookings WHERE ref = ?').get(String(req.params.ref));
+    const token = String(req.body?.token || '');
+    if (!b || !b.cancel_token || b.cancel_token !== token || b.status !== 'pending') {
+      return res.json({ ok: true });
+    }
+    try {
+      await stripe.expireCheckoutSession(b.stripe_session);
+      db.prepare("UPDATE bookings SET status = 'expired' WHERE id = ? AND status = 'pending'").run(b.id);
+    } catch {
+      // Already completed or expired: let Stripe's answer decide.
+      await syncPayment(b).catch(() => {});
+    }
+    res.json({ ok: true });
   });
 
   // Bookings feed for Della's phone calendar. The token in the address is the only key.
@@ -305,8 +452,9 @@ function createApp({ db, config, adminPassword, clock = () => new Date(), busyCa
     if (!booking) return res.status(404).json({ error: 'Booking not found.' });
     // Simple overlap check against other confirmed bookings.
     const others = db
-      .prepare("SELECT time, duration FROM bookings WHERE date = ? AND status = 'confirmed' AND id != ?")
-      .all(booking.date, booking.id);
+      .prepare(takenSql)
+      .all(booking.date, clock().getTime() - HOLD_GRACE_MS)
+      .filter((o) => o.id !== booking.id);
     const start = toMinutes(booking.time);
     const end = start + booking.duration;
     if (others.some((o) => start < toMinutes(o.time) + o.duration && toMinutes(o.time) < end)) {
@@ -464,8 +612,13 @@ if (require.main === module) {
   }
   const dbFile = process.env.DATABASE_FILE || path.join(__dirname, '..', 'data', 'bookings.db');
   const db = openDatabase(dbFile);
-  const app = createApp({ db, config, adminPassword });
+  const stripe = process.env.STRIPE_SECRET_KEY ? createStripe(process.env.STRIPE_SECRET_KEY) : null;
+  const app = createApp({ db, config, adminPassword, stripe, publicUrl: process.env.PUBLIC_URL });
   if (process.env.TRUST_PROXY) app.set('trust proxy', 1);
+  if (stripe) {
+    console.log(`Card deposits are on (${config.currencySymbol}${config.depositAmount}).`);
+    setInterval(() => app.locals.sweepPayments().catch(console.error), 60 * 1000).unref();
+  }
   const port = Number(process.env.PORT) || 3000;
   app.listen(port, () => console.log(`${config.businessName} running at http://localhost:${port}`));
 }

@@ -49,6 +49,8 @@ main { max-width: 900px; }
 .booking .when { font-weight: 500; color: var(--brown); }
 .booking .who { font-weight: 400; }
 .booking .detail { font-size: 0.85rem; color: var(--muted); }
+.booking .pay { color: var(--ok); }
+.booking .pay.pending { color: var(--accent); }
 .booking .notes { font-size: 0.85rem; font-style: italic; }
 .booking.cancelled { opacity: 0.5; }
 .booking.cancelled .who { text-decoration: line-through; }

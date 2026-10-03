@@ -95,6 +95,18 @@ function openDatabase(file) {
     );
   `);
 
+  // Columns added after the first release; add them to older databases.
+  const bookingCols = new Set(db.prepare('PRAGMA table_info(bookings)').all().map((c) => c.name));
+  for (const [col, def] of [
+    ['deposit', 'REAL NOT NULL DEFAULT 0'],
+    ['deposit_paid', 'REAL NOT NULL DEFAULT 0'],
+    ['stripe_session', "TEXT NOT NULL DEFAULT ''"],
+    ['cancel_token', "TEXT NOT NULL DEFAULT ''"],
+    ['expires_at', 'INTEGER NOT NULL DEFAULT 0'],
+  ]) {
+    if (!bookingCols.has(col)) db.exec(`ALTER TABLE bookings ADD COLUMN ${col} ${def}`);
+  }
+
   const serviceCount = db.prepare('SELECT COUNT(*) AS n FROM services').get().n;
   if (serviceCount === 0) {
     const insert = db.prepare(

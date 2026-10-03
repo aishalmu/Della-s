@@ -27,6 +27,25 @@ Admin → **Calendar** has step-by-step instructions for both directions:
    Google "Secret address in iCal format", or Outlook's published ICS link). The site checks it every few minutes
    and won't offer times that clash with her events. Events marked "Free" are ignored.
 
+## Deposits (card / Apple Pay, paid into Halifax)
+
+Clients pay a deposit when they book, through [Stripe](https://stripe.com). Stripe pays the money into
+Della's bank account (Halifax) a few days later. The deposit is `depositAmount` in `config.json`
+(£10, or the full price if the treatments cost less).
+
+1. Create a Stripe account, choosing *Individual / sole trader*, and add the Halifax sort code and
+   account number as the payout account.
+2. In the Stripe Dashboard go to **Developers → API keys** and copy the **Secret key** (`sk_live_…`).
+   For a trial run use the test-mode key (`sk_test_…`) and Stripe's test card `4242 4242 4242 4242`.
+3. Add it to the site as the `STRIPE_SECRET_KEY` setting (Render: the service's **Environment** page) and redeploy.
+
+How it works: the client's chosen slot is held for 30 minutes while they pay on Stripe's page. The booking
+is confirmed (and appears in Della's calendar) only once the deposit is paid. If they cancel or don't
+finish, the slot is released. Payments are double-checked every minute, so a booking is confirmed even if
+the client closes the page straight after paying. Refunds are done from the Stripe Dashboard.
+
+Without `STRIPE_SECRET_KEY` the site takes bookings without payment, as before.
+
 ## Running it
 
 Needs [Node.js](https://nodejs.org) 22.13 or newer. Nothing else: the database is built in.
@@ -43,6 +62,8 @@ ADMIN_PASSWORD=choose-a-password npm start
 | `PORT`           | Port to listen on                                         | `3000`             |
 | `DATABASE_FILE`  | Where bookings, prices and hours are saved                | `data/bookings.db` |
 | `TRUST_PROXY`    | Set to `1` when running behind a hosting provider's proxy | off                |
+| `STRIPE_SECRET_KEY` | Turns on card deposits (see above)                     | off                |
+| `PUBLIC_URL`     | The site's address, e.g. `https://dellasnails.co.uk` (used for Stripe return links) | worked out from the request |
 
 Run the tests with `npm test`.
 
